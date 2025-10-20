@@ -1,0 +1,42 @@
+services:
+   namenode:
+      image: apache/hadoop:3.3.6
+      command: ["hdfs", "namenode"]
+      ports:
+        - "127.0.0.1:9870:9870"  # NameNode Web UI
+        - "127.0.0.1:8020:8020"  # HDFS RPC
+      env_file:
+        - ./.docker/.hdfs.env
+      environment:
+         - ENSURE_NAMENODE_DIR=/tmp/hadoop-root/dfs/name
+
+   datanode:
+      image: apache/hadoop:3.3.6
+      command: ["hdfs", "datanode"]
+      ports:
+         - "127.0.0.1:9864:9864"  # DataNode Web UI
+      env_file:
+        - ./.docker/.hdfs.env      
+      environment:
+         - ENSURE_DATANODE_DIR=/tmp/hadoop-root/dfs/data
+
+   resourcemanager:
+      image: apache/hadoop:3.3.6
+      command: ["yarn", "resourcemanager"]
+      ports:
+         - "127.0.0.1:8088:8088"  # ResourceManager Web UI
+         - "127.0.0.1:8032:8032"  # ResourceManager RPC
+      env_file:
+        - ./.docker/.hdfs.env
+
+   nodemanager:
+      build:
+        context: .
+        dockerfile: .docker/hadoop-python-runtime.Dockerfile
+      command: ["yarn", "nodemanager"]
+      ports:
+         - "127.0.0.1:8042:8042"  # NodeManager Web UI
+      env_file:
+        - ./.docker/.hdfs.env
+      volumes:
+        - ./examples:/opt/examples:ro
