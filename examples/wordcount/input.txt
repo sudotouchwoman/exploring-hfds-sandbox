@@ -1,0 +1,6 @@
+hello world
+hello hadoop
+hello python
+python is awesome
+hadoop is powerful
+mapreduce with python
