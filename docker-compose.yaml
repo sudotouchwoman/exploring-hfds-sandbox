@@ -9,6 +9,11 @@ services:
         - ./.docker/.hdfs.env
       environment:
          - ENSURE_NAMENODE_DIR=/tmp/hadoop-root/dfs/name
+      deploy: &deploy-resources
+        resources:
+          limits:
+            memory: 1G
+            cpus: 1
 
    datanode:
       image: apache/hadoop:3.3.6
@@ -19,6 +24,7 @@ services:
         - ./.docker/.hdfs.env      
       environment:
          - ENSURE_DATANODE_DIR=/tmp/hadoop-root/dfs/data
+      deploy: *deploy-resources
 
    resourcemanager:
       image: apache/hadoop:3.3.6
@@ -28,6 +34,7 @@ services:
          - "127.0.0.1:8032:8032"  # ResourceManager RPC
       env_file:
         - ./.docker/.hdfs.env
+      deploy: *deploy-resources
 
    nodemanager:
       build:
@@ -40,3 +47,4 @@ services:
         - ./.docker/.hdfs.env
       volumes:
         - ./examples:/opt/examples:ro
+      deploy: *deploy-resources
