@@ -1,6 +1,6 @@
 services:
    namenode:
-      image: apache/hadoop:3.3.6
+      image: &hadoop-image apache/hadoop:3.3.6
       command: ["hdfs", "namenode"]
       ports:
         - "127.0.0.1:9870:9870"  # NameNode Web UI
@@ -9,32 +9,49 @@ services:
         - ./.docker/.hdfs.env
       environment:
          - ENSURE_NAMENODE_DIR=/tmp/hadoop-root/dfs/name
+      volumes:
+         - ./.docker/configs/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+         - ./.docker/configs/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+         - ./data/hdfs-namenode:/tmp/hadoop-root/dfs/name
       deploy: &deploy-resources
         resources:
           limits:
-            memory: 1G
+            memory: 2G
             cpus: 1
 
    datanode:
-      image: apache/hadoop:3.3.6
+      image: *hadoop-image
       command: ["hdfs", "datanode"]
       ports:
-         - "127.0.0.1:9864:9864"  # DataNode Web UI
+        - "127.0.0.1:9864:9864"  # DataNode Web UI
       env_file:
-        - ./.docker/.hdfs.env      
+        - ./.docker/.hdfs.env
       environment:
          - ENSURE_DATANODE_DIR=/tmp/hadoop-root/dfs/data
+      volumes:
+         - ./.docker/configs/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+         - ./.docker/configs/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+         - ./data/hdfs-datanode:/tmp/hadoop-root/dfs/data
       deploy: *deploy-resources
 
    resourcemanager:
-      image: apache/hadoop:3.3.6
+      image: *hadoop-image
       command: ["yarn", "resourcemanager"]
       ports:
-         - "127.0.0.1:8088:8088"  # ResourceManager Web UI
-         - "127.0.0.1:8032:8032"  # ResourceManager RPC
+        - "127.0.0.1:8088:8088"  # ResourceManager Web UI
+        - "127.0.0.1:8032:8032"  # ResourceManager RPC
       env_file:
         - ./.docker/.hdfs.env
-      deploy: *deploy-resources
+      volumes:
+         - ./.docker/configs/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+         - ./.docker/configs/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+         - ./.docker/configs/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
+         - ./.docker/configs/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+      deploy:
+        resources:
+          limits:
+            memory: 4G
+            cpus: 2
 
    nodemanager:
       build:
@@ -42,9 +59,63 @@ services:
         dockerfile: .docker/hadoop-python-runtime.Dockerfile
       command: ["yarn", "nodemanager"]
       ports:
-         - "127.0.0.1:8042:8042"  # NodeManager Web UI
+        - "127.0.0.1:8042:8042"  # NodeManager Web UI
       env_file:
         - ./.docker/.hdfs.env
       volumes:
-        - ./examples:/opt/examples:ro
+         - ./examples:/opt/examples:ro
+         - ./.docker/configs/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+         - ./.docker/configs/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+         - ./.docker/configs/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
+         - ./.docker/configs/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+      deploy:
+        resources:
+          limits:
+            memory: 4G
+            cpus: 2
+
+   hdfs-init:
+      image: *hadoop-image
+      depends_on:
+         - namenode
+         - datanode
+      env_file:
+        - ./.docker/.hdfs.env
+      volumes:
+         - ./.docker/hdfs-init.sh:/hdfs-init.sh:ro
+         - ./.docker/configs/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+         - ./.docker/configs/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      command: ["/bin/bash","/hdfs-init.sh"]
+      restart: "on-failure:5"
+      deploy: *deploy-resources
+
+   # standalone hive
+   standalone-hive:
+      image: apache/hive:4.0.0
+      depends_on:
+         hdfs-init:
+            condition: service_completed_successfully
+         namenode:
+            condition: service_started
+         datanode:
+            condition: service_started
+         resourcemanager:
+            condition: service_started
+         nodemanager:
+            condition: service_started
+      volumes:
+         - ./.docker/configs/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+         - ./.docker/configs/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+         - ./.docker/configs/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
+         - ./.docker/configs/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+         - ./.docker/configs/hive-site.xml:/opt/hive/conf/hive-site.xml:ro
+         - ./data/hive-metastore:/opt/hive/persist
+         - ./examples:/opt/examples:ro
+      env_file:
+        - ./.docker/.hdfs.env
+      environment:
+         - SERVICE_NAME=hiveserver2
+      ports:
+        - "127.0.0.1:10000:10000"  # HiveServer2 JDBC
+        - "127.0.0.1:10002:10002"  # HS2 HTTP
       deploy: *deploy-resources

@@ -6,6 +6,7 @@
 .direnv/
 .vscode/
 data/
+tmp/
 
 .coverage
 .cursorignore

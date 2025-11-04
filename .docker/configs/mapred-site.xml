@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<configuration>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+  <!-- set environment variables for mapreduce application master to find python3 interpreter -->
+  <!-- Note: Using actual paths instead of env substitution as Hadoop's ${env.VAR} -->
+  <!-- doesn't resolve properly in container launch scripts -->
+
+  <!-- Java 11+ compatibility options -->
+  <property>
+    <name>mapreduce.admin.user.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop</value>
+  </property>
+  <property>
+    <name>yarn.app.mapreduce.am.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop,PATH=/opt/python-runtime/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin,VIRTUAL_ENV=/opt/python-runtime/.venv</value>
+  </property>
+  <property>
+    <name>mapreduce.map.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop,PATH=/opt/python-runtime/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin,VIRTUAL_ENV=/opt/python-runtime/.venv</value>
+  </property>
+  <property>
+    <name>mapreduce.reduce.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop,PATH=/opt/python-runtime/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin,VIRTUAL_ENV=/opt/python-runtime/.venv</value>
+  </property>
+</configuration>

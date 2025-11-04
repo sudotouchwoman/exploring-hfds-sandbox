@@ -1,0 +1,1 @@
+beeline -u 'jdbc:hive2://standalone-hive:10000/' -f ./sql/04-build-marts.sql

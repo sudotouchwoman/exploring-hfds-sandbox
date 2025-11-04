@@ -14,6 +14,9 @@ docker compose build
 
 See `./.docker/` for details. Basically, we install `python3.12` with `uv` and also a minimal `venv` to use in submitted jobs.
 
+Note: after migrating to volumes for persistence, `namenode` was complaining about
+its storage initialization, so you might want to run `make volumes` before `make up` (or `docker compose up`). This will create required directories and init `namenode` filesystem.
+
 Then, run as usual:
 
 ```sh
